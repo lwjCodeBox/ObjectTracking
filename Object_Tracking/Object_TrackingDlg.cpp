@@ -61,6 +61,7 @@ BOOL CObjectTrackingDlg::OnInitDialog()
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
+//-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 void CObjectTrackingDlg::MakeDeviceList()
 {
@@ -108,6 +109,7 @@ void CObjectTrackingDlg::MakeDeviceList()
 		p_create_dev_enum->Release();
 	}
 }
+//-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 // 대화 상자에 최소화 단추를 추가할 경우 아이콘을 그리려면
 //  아래 코드가 필요합니다.  문서/뷰 모델을 사용하는 MFC 애플리케이션의 경우에는
@@ -137,6 +139,7 @@ void CObjectTrackingDlg::OnPaint()
 		CDialogEx::OnPaint();
 	}
 }
+//-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 // 사용자가 최소화된 창을 끄는 동안에 커서가 표시되도록 시스템에서
 //  이 함수를 호출합니다.
@@ -144,7 +147,7 @@ HCURSOR CObjectTrackingDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
 }
-
+//-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 void CObjectTrackingDlg::OnDestroy()
 {
@@ -155,17 +158,17 @@ void CObjectTrackingDlg::OnDestroy()
 
 	OnBnClickedStopBtn();
 }
-
+//-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 void CObjectTrackingDlg::OnBnClickedOk()
 {	
 	//CDialogEx::OnOK();
 #if 1
 	cv::Mat img = cv::imread("lenna.bmp");
-
+	
 	cv::namedWindow("img");
 	cv::imshow("img", img);	
-	//cv::setMouseCallback("Color", On_Mouse__, NULL); //Select_Area On_Mouse
+	cv::setMouseCallback("img", On_Mouse, NULL);
 
 	cv::waitKey();
 	cv::destroyAllWindows();
@@ -173,12 +176,13 @@ void CObjectTrackingDlg::OnBnClickedOk()
 	
 #endif
 }
-
+//-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 void CObjectTrackingDlg::OnBnClickedCancel()
 {
 	CDialogEx::OnCancel();
 }
+//-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 void CObjectTrackingDlg::OnBnClickedStartBtn()
 {
@@ -217,7 +221,7 @@ void CObjectTrackingDlg::OnBnClickedStartBtn()
 	// 일정 주기로 웹캠으로부터 영상을 가져오기 위해 타이머를 사용합니다. 
 	SetTimer(1000, 30, NULL);
 }
-
+//-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 void CObjectTrackingDlg::OnTimer(UINT_PTR nIDEvent)
 {
@@ -357,6 +361,7 @@ void CObjectTrackingDlg::OnTimer(UINT_PTR nIDEvent)
 
 	CDialogEx::OnTimer(nIDEvent);
 }
+//-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 void CObjectTrackingDlg::OnBnClickedStopBtn()
 {
@@ -372,7 +377,7 @@ void CObjectTrackingDlg::OnBnClickedStopBtn()
 		mp_cap = NULL;
 	}
 }
-
+//-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 void CObjectTrackingDlg::Select_Area(int event, int x, int y, int flags, void *userdata)
 {
@@ -417,6 +422,7 @@ void CObjectTrackingDlg::Select_Area(int event, int x, int y, int flags, void *u
 		p_data->step = 3;
 	}
 }
+//-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 void CObjectTrackingDlg::OnLButtonDown(UINT nFlags, CPoint point)
 {
@@ -459,3 +465,4 @@ void CObjectTrackingDlg::OnLButtonDown(UINT nFlags, CPoint point)
 	
 	CDialogEx::OnLButtonDown(nFlags, point);
 }
+//-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+

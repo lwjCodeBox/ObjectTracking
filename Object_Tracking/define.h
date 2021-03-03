@@ -9,16 +9,18 @@ typedef struct select_pos{
 	cv::Point ptOld;
 	bool bRange;
 } sp;
+//-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 void swap(int *v1, int *v2) {
 	int temp = *v1;
 	*v1 = *v2;
 	*v2 = temp;
 }
-
+//-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 void On_Mouse(int event, int x, int y, int flags, void *userdata)
-{
+{	
+#if 1 // 영역 선택
 	select_pos *p_data = (select_pos *)userdata;
 
 	cv::Mat img_result = p_data->img_color.clone();
@@ -46,11 +48,11 @@ void On_Mouse(int event, int x, int y, int flags, void *userdata)
 		p_data->end_y = y;
 
 		if ((10 > (p_data->end_x - p_data->start_x))) {
-			std::cout << "x 범위가 작습니다." << std::endl;
+			//std::cout << "x 범위가 작습니다." << std::endl;
 			p_data->bRange = false;
 		}
 		else if ((10 > (p_data->end_y - p_data->start_y))) {
-			std::cout << "y 범위가 작습니다." << std::endl;
+			//std::cout << "y 범위가 작습니다." << std::endl;
 			p_data->bRange = false;
 		}
 		else {
@@ -58,5 +60,27 @@ void On_Mouse(int event, int x, int y, int flags, void *userdata)
 		}
 
 		p_data->step = 3;
+	}	
+
+#elif 0 // 선긋기
+	switch (event) {
+	case EVENT_LBUTTONDOWN:
+		ptOld = Point(x, y);
+		cout << "EVENT_LBUTTONDOWN: " << x << ", " << y << endl;
+		break;
+	case EVENT_LBUTTONUP:
+		cout << "EVENT_LBUTTONUP: " << x << ", " << y << endl;
+		break;
+	case EVENT_MOUSEMOVE:
+		if (flags & EVENT_FLAG_LBUTTON) {
+			line(img, ptOld, Point(x, y), Scalar(0, 255, 255), 2);
+			imshow("img", img);
+			ptOld = Point(x, y);
+		}
+		break;
+	default:
+		break;
 	}
+#endif
 }
+//-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
