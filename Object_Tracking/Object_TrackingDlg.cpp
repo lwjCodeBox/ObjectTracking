@@ -19,7 +19,6 @@
 
 // CObjectTrackingDlg 대화 상자
 
-
 CObjectTrackingDlg::CObjectTrackingDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_OBJECT_TRACKING_DIALOG, pParent)
 {
@@ -42,7 +41,7 @@ BEGIN_MESSAGE_MAP(CObjectTrackingDlg, CDialogEx)
 	ON_BN_CLICKED(IDCANCEL, &CObjectTrackingDlg::OnBnClickedCancel)
 	ON_WM_DESTROY()
 	ON_WM_TIMER()
-	ON_WM_MOUSEMOVE()
+	ON_WM_LBUTTONDOWN()
 END_MESSAGE_MAP()
 
 
@@ -161,6 +160,18 @@ void CObjectTrackingDlg::OnDestroy()
 void CObjectTrackingDlg::OnBnClickedOk()
 {	
 	//CDialogEx::OnOK();
+#if 1
+	cv::Mat img = cv::imread("lenna.bmp");
+
+	cv::namedWindow("img");
+	cv::imshow("img", img);	
+	//cv::setMouseCallback("Color", On_Mouse__, NULL); //Select_Area On_Mouse
+
+	cv::waitKey();
+	cv::destroyAllWindows();
+#elif 0
+	
+#endif
 }
 
 
@@ -186,10 +197,10 @@ void CObjectTrackingDlg::OnBnClickedStartBtn()
 	myBrush.DeleteObject();
 	ReleaseDC(pDC);
 
-	if (capture == NULL) {
-		capture = new cv::VideoCapture(pos, cv::CAP_DSHOW);
+	if (mp_cap == NULL) {
+		mp_cap = new cv::VideoCapture(pos, cv::CAP_DSHOW);
 
-		if (!capture->isOpened()) {
+		if (!mp_cap->isOpened()) {
 			MessageBox(_T("캠을 열수 없습니다. \n"));
 			return;
 		}
@@ -218,9 +229,9 @@ void CObjectTrackingDlg::OnTimer(UINT_PTR nIDEvent)
 
 		//mat_frame가 입력 이미지입니다. 
 		//capture->read(mat_frame); <- 아래 코드와 같음. 강사님은 아래 코드가 더 좋다고 함.
-		*capture >> mat_frame;
+		*mp_cap >> m_frame;
 
-		if (mat_frame.empty()) {
+		if (m_frame.empty()) {
 			break; // End of video stream
 		}
 
@@ -232,18 +243,18 @@ void CObjectTrackingDlg::OnTimer(UINT_PTR nIDEvent)
 		// picture control의 가로, 세로 크기를 구해서 사이즈를 맞춤.
 		CRect rr;
 		GetDlgItem(IDC_PC_VIEW)->GetClientRect(&rr);
-		cv::resize(mat_frame, mat_frame, cv::Size(rr.Width(), rr.Height()));
+		cv::resize(m_frame, m_frame, cv::Size(rr.Width(), rr.Height()));
 
 		//cv::setMouseCallback("Color", OnMouseMove, this); //Select_Area
 
 		//화면에 보여주기 위한 처리입니다.
-		int bpp = 8 * mat_frame.elemSize();
+		int bpp = 8 * m_frame.elemSize();
 		assert((bpp == 8 || bpp == 24 || bpp == 32));
 
 		int padding = 0;
 		//32 bit image is always DWORD aligned because each pixel requires 4 bytes
 		if (bpp < 32)
-			padding = 4 - (mat_frame.cols % 4);
+			padding = 4 - (m_frame.cols % 4);
 
 		if (padding == 4)
 			padding = 0;
@@ -251,16 +262,16 @@ void CObjectTrackingDlg::OnTimer(UINT_PTR nIDEvent)
 		int border = 0;
 		//32 bit image is always DWORD aligned because each pixel requires 4 bytes
 		if (bpp < 32)
-			border = 4 - (mat_frame.cols % 4);
+			border = 4 - (m_frame.cols % 4);
 
 		cv::Mat mat_temp;
-		if (border > 0 || mat_frame.isContinuous() == false)
+		if (border > 0 || m_frame.isContinuous() == false)
 		{
 			// Adding needed columns on the right (max 3 px)
-			cv::copyMakeBorder(mat_frame, mat_temp, 0, 0, 0, border, cv::BORDER_CONSTANT, 0);
+			cv::copyMakeBorder(m_frame, mat_temp, 0, 0, 0, border, cv::BORDER_CONSTANT, 0);
 		}
 		else
-			mat_temp = mat_frame;
+			mat_temp = m_frame;
 
 		RECT r;
 		m_pc_view.GetClientRect(&r);
@@ -349,18 +360,19 @@ void CObjectTrackingDlg::OnTimer(UINT_PTR nIDEvent)
 
 void CObjectTrackingDlg::OnBnClickedStopBtn()
 {
-	if(capture != NULL) {
+	if(mp_cap != NULL) {
 		// 타이머 종료
 		KillTimer(1000);
 
 		// VideoCapture 닫기
-		capture->release();
+		mp_cap->release();
 
 		// cv::VideoCapture객체 파괴
-		delete capture;
-		capture = NULL;
+		delete mp_cap;
+		mp_cap = NULL;
 	}
 }
+
 
 void CObjectTrackingDlg::Select_Area(int event, int x, int y, int flags, void *userdata)
 {
@@ -404,4 +416,46 @@ void CObjectTrackingDlg::Select_Area(int event, int x, int y, int flags, void *u
 
 		p_data->step = 3;
 	}
+}
+
+void CObjectTrackingDlg::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	select_pos sp;
+	OnBnClickedStopBtn();
+	//https://take-a-step-first.tistory.com/127
+	CRect rt;  // 픽쳐 컨트롤의 사각형 영역 조사
+	// 픽쳐 컨트롤의 사각형 좌표를 구함
+	// GetClientRect는 크기를 구하니 GetWindowRect 이용...
+	GetDlgItem(IDC_PC_VIEW)->GetWindowRect(&rt);
+
+	// GetWindowRect 로 얻은 좌표는 스크린 좌표(물리적) 이니 이를
+	// 화면 좌표(논리적, 클라이언트 좌표)로 변환
+	ScreenToClient(&rt);
+
+	if (rt.PtInRect(point)) {// 픽쳐 컨트롤의 사각형 영역에 마우스 클릭 좌표(point) 가 있으면...TRUE	
+		
+		//while (1) {
+			sp.start_x = point.x;
+			sp.start_y = point.y;
+
+			sp.img_color = m_frame.clone();
+			cv::circle(sp.img_color, cv::Point(sp.start_x, sp.start_y), 10, cv::Scalar(250, 10, 0), -1);
+
+			//if (cv::waitKey(30) == 27) break;
+			/*cv::Mat ROI(sp.img_color);
+			cv::cvtColor(ROI, ROI, cv::COLOR_BGR2GRAY);
+			cv::Canny(ROI, ROI, 150, 50);
+			cv::cvtColor(ROI, ROI, cv::COLOR_GRAY2BGR);*/
+		//}
+		CString str;
+		str.Format(L"[x >> %d] [y >> %d]", point.x, point.y);		
+		AfxMessageBox(str);
+
+		
+	}
+	else  // 픽쳐 컨트롤 영역에 마우스 클릭 좌표가 없으면... FALSE
+		AfxMessageBox(L"Other areas!!");
+
+	
+	CDialogEx::OnLButtonDown(nFlags, point);
 }
