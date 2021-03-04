@@ -5,17 +5,21 @@
 #pragma once
 
 #include <opencv2/opencv.hpp>
-#include <opencv2/highgui.hpp>
 #include <dshow.h>   // DirectShow 기술을 사용하기 위해 포함해야 하는 헤더 파일
+
+#include "define.h"
+
+#define NotUsedOpenCV 0
 
 // CObjectTrackingDlg 대화 상자
 class CObjectTrackingDlg : public CDialogEx
 {
 private:
 	cv::VideoCapture *mp_cap = NULL;
-	cv::Mat m_frame;
+	cv::Mat m_frame;	
 	CImage cimage_mfc;
-
+	TMouseCursor *t_mc = NULL;
+	
 // 컴포넌트
 public:
 	CComboBox m_dev_list;
@@ -23,10 +27,10 @@ public:
 
 private:
 	void MakeDeviceList();
-	
+
 public:
-	void Select_Area(int event, int x, int y, int flags, void *userdata);
-	void _Select_Area();
+
+	
 // 생성입니다.
 public:
 	CObjectTrackingDlg(CWnd* pParent = nullptr);	// 표준 생성자입니다.

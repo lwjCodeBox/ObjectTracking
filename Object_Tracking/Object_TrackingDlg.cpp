@@ -8,8 +8,6 @@
 #include "Object_TrackingDlg.h"
 #include "afxdialogex.h"
 
-#include "define.h"
-
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -163,18 +161,6 @@ void CObjectTrackingDlg::OnDestroy()
 void CObjectTrackingDlg::OnBnClickedOk()
 {	
 	//CDialogEx::OnOK();
-#if 1
-	cv::Mat img = cv::imread("lenna.bmp");
-	
-	cv::namedWindow("img");
-	cv::imshow("img", img);	
-	cv::setMouseCallback("img", On_Mouse, NULL);
-
-	cv::waitKey();
-	cv::destroyAllWindows();
-#elif 0
-	
-#endif
 }
 //-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
@@ -186,6 +172,7 @@ void CObjectTrackingDlg::OnBnClickedCancel()
 
 void CObjectTrackingDlg::OnBnClickedStartBtn()
 {
+#if NotUsedOpenCV
 	int pos = m_dev_list.GetCurSel(); // 현재 콤보 박스에 선택된 위치를 얻어옴.
 
 	CRect rect;
@@ -208,7 +195,8 @@ void CObjectTrackingDlg::OnBnClickedStartBtn()
 			MessageBox(_T("캠을 열수 없습니다. \n"));
 			return;
 		}
-
+		
+	/*
 		// picture control의 가로, 세로 크기를 구함.
 		CRect r;
 		GetDlgItem(IDC_PC_VIEW)->GetClientRect(&r);
@@ -216,23 +204,66 @@ void CObjectTrackingDlg::OnBnClickedStartBtn()
 		// 웹캠 크기를  width x heigh으로 지정    
 		//capture->set(cv::CAP_PROP_FRAME_WIDTH, r.Width());
 		//capture->set(cv::CAP_PROP_FRAME_HEIGHT, r.Height());		
+	*/
 	}
 
 	// 일정 주기로 웹캠으로부터 영상을 가져오기 위해 타이머를 사용합니다. 
 	SetTimer(1000, 30, NULL);
+
+	
+#else
+
+	if (t_mc == NULL) {
+		t_mc = new TMouseCursor;
+
+		int pos = m_dev_list.GetCurSel(); // 현재 콤보 박스에 선택된 위치를 얻어옴.
+
+		// picture control의 가로, 세로 크기를 구함.
+		CRect r;
+		GetDlgItem(IDC_PC_VIEW)->GetClientRect(&r);
+		ScreenToClient(&r);
+
+		if (mp_cap == NULL) {
+			mp_cap = new cv::VideoCapture(pos, cv::CAP_DSHOW);
+
+			if (!mp_cap->isOpened()) {
+				MessageBox(_T("캠을 열수 없습니다. \n"));
+				return;
+			}
+		}
+
+		// 일정 주기로 웹캠으로부터 영상을 가져오기 위해 타이머를 사용합니다. 
+		SetTimer(1000, 30, NULL);
+
+		cv::namedWindow("img", cv::WINDOW_NORMAL); // 창 조절 가능.	
+
+		// 타이틀 창 삭제.
+		cv::setWindowProperty("img", cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
+		cv::moveWindow("img", 500, 200);
+		cv::resizeWindow("img", cv::Size(r.Width(), r.Height()));
+
+		cv::setMouseCallback("img", On_Mouse, t_mc);		
+}
+#endif
 }
 //-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 void CObjectTrackingDlg::OnTimer(UINT_PTR nIDEvent)
 {
-#if 1
+#if NotUsedOpenCV
 	switch (nIDEvent) {
 
 	case 1000:
+		*mp_cap >> m_frame;
+		
+		// End of video stream
+		if (m_frame.empty()) break; 		
+
+		
 		// 참고 사이트 >> https://webnautes.tistory.com/824
 
 		//mat_frame가 입력 이미지입니다. 
-		//capture->read(mat_frame); <- 아래 코드와 같음. 강사님은 아래 코드가 더 좋다고 함.
+		//capture->read(m_frame); <- 아래 코드와 같음. 강사님은 아래 코드가 더 좋다고 함.
 		*mp_cap >> m_frame;
 
 		if (m_frame.empty()) {
@@ -248,8 +279,6 @@ void CObjectTrackingDlg::OnTimer(UINT_PTR nIDEvent)
 		CRect rr;
 		GetDlgItem(IDC_PC_VIEW)->GetClientRect(&rr);
 		cv::resize(m_frame, m_frame, cv::Size(rr.Width(), rr.Height()));
-
-		//cv::setMouseCallback("Color", OnMouseMove, this); //Select_Area
 
 		//화면에 보여주기 위한 처리입니다.
 		int bpp = 8 * m_frame.elemSize();
@@ -282,7 +311,6 @@ void CObjectTrackingDlg::OnTimer(UINT_PTR nIDEvent)
 		cv::Size winSize(r.right, r.bottom);
 
 		cimage_mfc.Create(winSize.width, winSize.height, 24);
-
 
 		BITMAPINFO *bitInfo = (BITMAPINFO *)malloc(sizeof(BITMAPINFO) + 256 * sizeof(RGBQUAD));
 		bitInfo->bmiHeader.biBitCount = bpp;
@@ -353,9 +381,47 @@ void CObjectTrackingDlg::OnTimer(UINT_PTR nIDEvent)
 
 		free(bitInfo);
 
-		break;
+		break;		
 #else
+	switch (nIDEvent) {
 
+	case 1000:		
+		*mp_cap >> m_frame;
+
+		if (m_frame.empty()) {
+			break; // End of video stream
+		}
+				
+		switch (t_mc->step) {
+		case 1:
+			//cv::circle(m_frame, cv::Point(t_mc->start_x, t_mc->start_y), 10, cv::Scalar(250, 10, 0), -1);
+			break;
+
+		case 2:
+			cv::rectangle(m_frame, cv::Point(t_mc->start_x, t_mc->start_y), cv::Point(t_mc->end_x, t_mc->end_y), cv::Scalar(0, 255, 0), 3);
+			break;
+
+		case 3:
+			if (t_mc->bRange) {
+				if (t_mc->start_x > t_mc->end_x) {
+					swap(&t_mc->start_x, &t_mc->end_x);
+					swap(&t_mc->start_y, &t_mc->end_y);
+				}
+
+				cv::Mat ROI(m_frame, cv::Rect(t_mc->start_x, t_mc->start_y, t_mc->end_x - t_mc->start_x, t_mc->end_y - t_mc->start_y));
+				cv::cvtColor(ROI, ROI, cv::COLOR_BGR2GRAY);
+				cv::Canny(ROI, ROI, 150, 50);
+				cv::cvtColor(ROI, ROI, cv::COLOR_GRAY2BGR);
+
+				ROI.copyTo(m_frame(cv::Rect(t_mc->start_x, t_mc->start_y, t_mc->end_x - t_mc->start_x, t_mc->end_y - t_mc->start_y)));
+
+				cv::rectangle(m_frame, cv::Point(t_mc->start_x, t_mc->start_y), cv::Point(t_mc->end_x, t_mc->end_y), cv::Scalar(255, 0, 0), 3);
+			}
+
+			break;
+		}
+
+		cv::imshow("img", m_frame);								
 #endif
 	}
 
@@ -365,6 +431,19 @@ void CObjectTrackingDlg::OnTimer(UINT_PTR nIDEvent)
 
 void CObjectTrackingDlg::OnBnClickedStopBtn()
 {
+	CRect rect;
+	GetClientRect(&rect);
+
+	CDC *pDC = m_pc_view.GetWindowDC();
+
+	CBrush myBrush(RGB(255, 255, 0)); // dialog background color <- 요기 바꾸면 됨.
+	CBrush *pOld = pDC->SelectObject(&myBrush);
+	BOOL bRes = pDC->PatBlt(0, 0, rect.Width(), rect.Height(), PATCOPY);
+	pDC->SelectObject(pOld); // restore old brush
+
+	myBrush.DeleteObject();
+	ReleaseDC(pDC);
+
 	if(mp_cap != NULL) {
 		// 타이머 종료
 		KillTimer(1000);
@@ -375,59 +454,18 @@ void CObjectTrackingDlg::OnBnClickedStopBtn()
 		// cv::VideoCapture객체 파괴
 		delete mp_cap;
 		mp_cap = NULL;
-	}
-}
-//-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-void CObjectTrackingDlg::Select_Area(int event, int x, int y, int flags, void *userdata)
-{
-	select_pos *p_data = (select_pos *)userdata;
-
-	cv::Mat img_result = p_data->img_color.clone();
-
-	if (event == cv::EVENT_LBUTTONDOWN) {
-		p_data->mouse_is_pressing = true;
-		p_data->start_x = x;
-		p_data->start_y = y;
-
-		p_data->step = 1;
-	}
-	else if (event == cv::EVENT_MOUSEMOVE) {
-
-		if (p_data->mouse_is_pressing) {
-			p_data->end_x = x;
-			p_data->end_y = y;
-
-			p_data->step = 2;
-		}
-	}
-	else if (event == cv::EVENT_LBUTTONUP) {
-		p_data->mouse_is_pressing = false;
-
-		p_data->end_x = x;
-		p_data->end_y = y;
-
-		if ((10 > (p_data->end_x - p_data->start_x))) {
-			std::cout << "x 범위가 작습니다." << std::endl;
-			p_data->bRange = false;
-		}
-		else if ((10 > (p_data->end_y - p_data->start_y))) {
-			std::cout << "y 범위가 작습니다." << std::endl;
-			p_data->bRange = false;
-		}
-		else {
-			p_data->bRange = true;
-		}
-
-		p_data->step = 3;
+		// 구조체 동적할당 파괴
+		delete t_mc;
+		t_mc = NULL;
+	
+		cv::destroyAllWindows();
 	}
 }
 //-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 void CObjectTrackingDlg::OnLButtonDown(UINT nFlags, CPoint point)
-{
-	select_pos sp;
-	OnBnClickedStopBtn();
+{		
 	//https://take-a-step-first.tistory.com/127
 	CRect rt;  // 픽쳐 컨트롤의 사각형 영역 조사
 	// 픽쳐 컨트롤의 사각형 좌표를 구함
@@ -438,26 +476,12 @@ void CObjectTrackingDlg::OnLButtonDown(UINT nFlags, CPoint point)
 	// 화면 좌표(논리적, 클라이언트 좌표)로 변환
 	ScreenToClient(&rt);
 
-	if (rt.PtInRect(point)) {// 픽쳐 컨트롤의 사각형 영역에 마우스 클릭 좌표(point) 가 있으면...TRUE	
-		
-		//while (1) {
-			sp.start_x = point.x;
-			sp.start_y = point.y;
+	// 픽쳐 컨트롤의 사각형 영역에 마우스 클릭 좌표(point) 가 있으면...TRUE
+	if (rt.PtInRect(point)) {
 
-			sp.img_color = m_frame.clone();
-			cv::circle(sp.img_color, cv::Point(sp.start_x, sp.start_y), 10, cv::Scalar(250, 10, 0), -1);
-
-			//if (cv::waitKey(30) == 27) break;
-			/*cv::Mat ROI(sp.img_color);
-			cv::cvtColor(ROI, ROI, cv::COLOR_BGR2GRAY);
-			cv::Canny(ROI, ROI, 150, 50);
-			cv::cvtColor(ROI, ROI, cv::COLOR_GRAY2BGR);*/
-		//}
 		CString str;
 		str.Format(L"[x >> %d] [y >> %d]", point.x, point.y);		
-		AfxMessageBox(str);
-
-		
+		//AfxMessageBox(str);		
 	}
 	else  // 픽쳐 컨트롤 영역에 마우스 클릭 좌표가 없으면... FALSE
 		AfxMessageBox(L"Other areas!!");
