@@ -20,10 +20,9 @@ void On_Mouse(int event, int x, int y, int flags, void *userdata)
 		p_data->start_x = x;
 		p_data->start_y = y;
 
-		p_data->step = 1;
+		p_data->step = 1;				
 	}
 	else if (event == cv::EVENT_MOUSEMOVE) {
-
 		if (p_data->mouse_is_pressing) {
 			p_data->end_x = x;
 			p_data->end_y = y;
@@ -36,20 +35,40 @@ void On_Mouse(int event, int x, int y, int flags, void *userdata)
 
 		p_data->end_x = x;
 		p_data->end_y = y;
+		
+		// 마우스 드래그 방향이 오른쪽에서 왼쪽으로 진행된 경우. 
+		if (p_data->start_x > p_data->end_x) {
+			swap(&p_data->start_x, &p_data->end_x);
+		}
+		// 마우스 드래그 방향이 아래에서 위쪽으로 진행된 경우.
+		if (p_data->start_y > p_data->end_y) {
+			swap(&p_data->start_y, &p_data->end_y);
+		}
+			
+		// 창 사이즈 얻어옴.		
+		cv::Rect r = cv::getWindowImageRect("WebCam");		
+		int w = r.width;
+		int h = r.height;
 
-		if ((10 > (p_data->end_x - p_data->start_x))) {
-			//std::cout << "x 범위가 작습니다." << std::endl;
-			p_data->bRange = false;
-		}
-		else if ((10 > (p_data->end_y - p_data->start_y))) {
-			//std::cout << "y 범위가 작습니다." << std::endl;
-			p_data->bRange = false;
-		}
-		else {
-			p_data->bRange = true;
-		}
+		// 선택 영역 정상.
+		p_data->bRange = true;
 
+		// 선택한 영역이 윈도우 창을 벗어난 경우.
+		if (p_data->start_x <= -1 || p_data->start_y <= -1 ||
+			p_data->end_x > w || p_data->end_y > h)
+			p_data->bRange = false;
+
+
+		// 선택한 영역이 마치 선 긋듯이한 경우.
+		if (p_data->end_x == p_data->start_x || p_data->end_y == p_data->start_y)
+			p_data->bRange = false;
+		 						
 		p_data->step = 3;
+	}
+	else if (event == cv::EVENT_RBUTTONDOWN) {
+		CString str;
+		str.Format(L"%d, %d", x, y);
+		AfxMessageBox(str);		
 	}
 
 #elif 0 // 선긋기

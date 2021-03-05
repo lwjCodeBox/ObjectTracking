@@ -216,15 +216,10 @@ void CObjectTrackingDlg::OnBnClickedStartBtn()
 	if (t_mc == NULL) {
 		t_mc = new TMouseCursor;
 
-		int pos = m_dev_list.GetCurSel(); // 현재 콤보 박스에 선택된 위치를 얻어옴.
-
-		// picture control의 가로, 세로 크기를 구함.
-		CRect r;
-		GetDlgItem(IDC_PC_VIEW)->GetClientRect(&r);
-		ScreenToClient(&r);
+		m_Selected_Cam = m_dev_list.GetCurSel(); // 현재 콤보 박스에 선택된 위치를 얻어옴.
 
 		if (mp_cap == NULL) {
-			mp_cap = new cv::VideoCapture(pos, cv::CAP_DSHOW);
+			mp_cap = new cv::VideoCapture(m_Selected_Cam, cv::CAP_DSHOW);
 
 			if (!mp_cap->isOpened()) {
 				MessageBox(_T("캠을 열수 없습니다. \n"));
@@ -234,15 +229,22 @@ void CObjectTrackingDlg::OnBnClickedStartBtn()
 
 		// 일정 주기로 웹캠으로부터 영상을 가져오기 위해 타이머를 사용합니다. 
 		SetTimer(1000, 30, NULL);
-
-		cv::namedWindow("img", cv::WINDOW_NORMAL); // 창 조절 가능.	
-
+				
+		cv::namedWindow("WebCam", cv::WINDOW_AUTOSIZE); // 창 조절 불가능.
+		//cv::namedWindow("WebCam", cv::WINDOW_NORMAL); // 창 조절 가능.		
+		
+	/*
 		// 타이틀 창 삭제.
-		cv::setWindowProperty("img", cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
-		cv::moveWindow("img", 500, 200);
-		cv::resizeWindow("img", cv::Size(r.Width(), r.Height()));
-
-		cv::setMouseCallback("img", On_Mouse, t_mc);		
+		cv::setWindowProperty("WebCam", cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
+		cv::moveWindow("WebCam", 500, 200);
+	
+		// picture control의 가로, 세로 크기를 구함.
+		CRect r;
+		GetDlgItem(IDC_PC_VIEW)->GetClientRect(&r);
+		ScreenToClient(&r);
+		cv::resizeWindow("WebCam", cv::Size(r.Width(), r.Height()));
+	*/
+		cv::setMouseCallback("WebCam", On_Mouse, t_mc);
 }
 #endif
 }
@@ -382,46 +384,55 @@ void CObjectTrackingDlg::OnTimer(UINT_PTR nIDEvent)
 		free(bitInfo);
 
 		break;		
-#else
+#else	
 	switch (nIDEvent) {
 
 	case 1000:		
 		*mp_cap >> m_frame;
-
+		
 		if (m_frame.empty()) {
 			break; // End of video stream
 		}
 				
 		switch (t_mc->step) {
 		case 1:
-			//cv::circle(m_frame, cv::Point(t_mc->start_x, t_mc->start_y), 10, cv::Scalar(250, 10, 0), -1);
+			cv::circle(m_frame, cv::Point(t_mc->start_x, t_mc->start_y), 7, cv::Scalar(0, 10, 250), -1); 
 			break;
 
 		case 2:
-			cv::rectangle(m_frame, cv::Point(t_mc->start_x, t_mc->start_y), cv::Point(t_mc->end_x, t_mc->end_y), cv::Scalar(0, 255, 0), 3);
+			cv::circle(m_frame, cv::Point(t_mc->start_x, t_mc->start_y), 7, cv::Scalar(250, 10, 0), -1);
+			cv::rectangle(m_frame, cv::Point(t_mc->start_x, t_mc->start_y), cv::Point(t_mc->end_x, t_mc->end_y), cv::Scalar(0, 255, 0), 2);
 			break;
 
 		case 3:
-			if (t_mc->bRange) {
-				if (t_mc->start_x > t_mc->end_x) {
-					swap(&t_mc->start_x, &t_mc->end_x);
-					swap(&t_mc->start_y, &t_mc->end_y);
-				}
-
+			if (t_mc->bRange) {				
+				//
 				cv::Mat ROI(m_frame, cv::Rect(t_mc->start_x, t_mc->start_y, t_mc->end_x - t_mc->start_x, t_mc->end_y - t_mc->start_y));
 				cv::cvtColor(ROI, ROI, cv::COLOR_BGR2GRAY);
 				cv::Canny(ROI, ROI, 150, 50);
 				cv::cvtColor(ROI, ROI, cv::COLOR_GRAY2BGR);
 
 				ROI.copyTo(m_frame(cv::Rect(t_mc->start_x, t_mc->start_y, t_mc->end_x - t_mc->start_x, t_mc->end_y - t_mc->start_y)));
+				//
 
-				cv::rectangle(m_frame, cv::Point(t_mc->start_x, t_mc->start_y), cv::Point(t_mc->end_x, t_mc->end_y), cv::Scalar(255, 0, 0), 3);
+				// 선택한 영역 표시.
+				cv::rectangle(m_frame, cv::Point(t_mc->start_x, t_mc->start_y), cv::Point(t_mc->end_x, t_mc->end_y), cv::Scalar(255, 0, 0), 2);
+								
+				char strStart[15], strEnd[15];
+				sprintf_s(strStart, "%d, %d", t_mc->start_x, t_mc->start_y);
+				sprintf_s(strEnd, "%d, %d", t_mc->end_x, t_mc->end_y);
+				cv::putText(m_frame, strStart, cv::Point(t_mc->start_x, t_mc->start_y - 3), cv::FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(255, 255, 120), 1);
+				cv::putText(m_frame, strEnd, cv::Point(t_mc->end_x - 20, t_mc->end_y + 15), cv::FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(255, 255, 120), 1);
 			}
-
+		
 			break;
 		}
-
-		cv::imshow("img", m_frame);								
+					
+		// click window close "X" button	
+		if (-1 == cv::getWindowProperty("WebCam", 0))
+			OnBnClickedStopBtn();
+		else
+			cv::imshow("WebCam", m_frame);
 #endif
 	}
 

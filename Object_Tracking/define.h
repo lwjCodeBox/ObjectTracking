@@ -7,12 +7,13 @@
 
 struct TMouseCursor{
 	bool mouse_is_pressing = false;
+	bool bRange;
+
 	int start_x, start_y, end_x, end_y;
 	int step = 0;
 
 	cv::Mat img_color;
-	cv::Point ptOld;
-	bool bRange;
+	cv::Point ptOld;	
 };
 //-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 

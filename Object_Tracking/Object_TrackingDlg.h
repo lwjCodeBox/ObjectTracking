@@ -20,6 +20,8 @@ private:
 	CImage cimage_mfc;
 	TMouseCursor *t_mc = NULL;
 	
+	unsigned char m_Selected_Cam;
+
 // 컴포넌트
 public:
 	CComboBox m_dev_list;
