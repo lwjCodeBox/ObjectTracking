@@ -13,13 +13,13 @@ void On_Mouse(int event, int x, int y, int flags, void *userdata)
 #if 1 // 영역 선택
 	TMouseCursor *p_data = (TMouseCursor *)userdata;
 
-	cv::Mat img_result = p_data->img_color.clone();
+	//cv::Mat img_result = p_data->img_color.clone();
 
 	if (event == cv::EVENT_LBUTTONDOWN) {
 		p_data->mouse_is_pressing = true;
 		p_data->start_x = x;
 		p_data->start_y = y;
-
+		
 		p_data->step = 1;				
 	}
 	else if (event == cv::EVENT_MOUSEMOVE) {
@@ -65,10 +65,12 @@ void On_Mouse(int event, int x, int y, int flags, void *userdata)
 		 						
 		p_data->step = 3;
 	}
-	else if (event == cv::EVENT_RBUTTONDOWN) {
-		CString str;
-		str.Format(L"%d, %d", x, y);
-		AfxMessageBox(str);		
+	// 우클릭 할때 씀 - 테스트용
+	else if (event == cv::EVENT_RBUTTONDOWN) {			
+		p_data->rc_x = x;
+		p_data->rc_y = y;
+
+		p_data->step = 4;
 	}
 
 #elif 0 // 선긋기

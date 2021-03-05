@@ -161,6 +161,12 @@ void CObjectTrackingDlg::OnDestroy()
 void CObjectTrackingDlg::OnBnClickedOk()
 {	
 	//CDialogEx::OnOK();
+
+	// face detection configuration
+	cv::CascadeClassifier face_classifier;
+
+	face_classifier.load("{YOUR_OPENCV_PATH}/data/haarcascades/haarcascade_frontalface_default.xml");
+
 }
 //-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
@@ -426,7 +432,15 @@ void CObjectTrackingDlg::OnTimer(UINT_PTR nIDEvent)
 			}
 		
 			break;
-		}
+
+		case 4: // 우클릭 할때 씀 - 테스트용
+			cv::circle(m_frame, cv::Point(t_mc->rc_x, t_mc->rc_y), 7, cv::Scalar(0, 10, 250), -1);
+
+			char strStart[15];
+			sprintf_s(strStart, "%d, %d", t_mc->rc_x, t_mc->rc_y);
+			cv::putText(m_frame, strStart, cv::Point(20, 20), cv::FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(255, 255, 120), 1);
+		}	
+
 					
 		// click window close "X" button	
 		if (-1 == cv::getWindowProperty("WebCam", 0))

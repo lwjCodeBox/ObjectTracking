@@ -13,7 +13,10 @@ struct TMouseCursor{
 	int step = 0;
 
 	cv::Mat img_color;
-	cv::Point ptOld;	
+	cv::Point ptOld;
+
+	// 우클릭 할때 씀 - 테스트용
+	int rc_x, rc_y;
 };
 //-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
