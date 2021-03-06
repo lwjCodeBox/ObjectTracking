@@ -17,10 +17,10 @@ class CObjectTrackingDlg : public CDialogEx
 private:
 	cv::VideoCapture *mp_cap = NULL;
 	cv::Mat m_frame;	
-	CImage cimage_mfc;
+	CImage cimage_mfc;	
 	TMouseCursor *t_mc = NULL;
 	
-	unsigned char m_Selected_Cam;
+	unsigned char m_Selected_Cam;	
 
 // 컴포넌트
 public:

@@ -226,12 +226,25 @@ void CObjectTrackingDlg::OnBnClickedStartBtn()
 
 		if (mp_cap == NULL) {
 			mp_cap = new cv::VideoCapture(m_Selected_Cam, cv::CAP_DSHOW);
-
+			
 			if (!mp_cap->isOpened()) {
 				MessageBox(_T("캠을 열수 없습니다. \n"));
 				return;
-			}
+			}						
 		}
+
+		CRect rect;
+		GetClientRect(&rect);
+
+		CDC *pDC = m_pc_view.GetWindowDC();
+
+		CBrush myBrush(RGB(0, 255, 0)); // dialog background color <- 요기 바꾸면 됨.
+		CBrush *pOld = pDC->SelectObject(&myBrush);
+		BOOL bRes = pDC->PatBlt(0, 0, rect.Width(), rect.Height(), PATCOPY);
+		pDC->SelectObject(pOld); // restore old brush
+
+		myBrush.DeleteObject();
+		ReleaseDC(pDC);
 
 		// 일정 주기로 웹캠으로부터 영상을 가져오기 위해 타이머를 사용합니다. 
 		SetTimer(1000, 30, NULL);
@@ -412,14 +425,14 @@ void CObjectTrackingDlg::OnTimer(UINT_PTR nIDEvent)
 
 		case 3:
 			if (t_mc->bRange) {				
-				//
+				/*
 				cv::Mat ROI(m_frame, cv::Rect(t_mc->start_x, t_mc->start_y, t_mc->end_x - t_mc->start_x, t_mc->end_y - t_mc->start_y));
 				cv::cvtColor(ROI, ROI, cv::COLOR_BGR2GRAY);
 				cv::Canny(ROI, ROI, 150, 50);
 				cv::cvtColor(ROI, ROI, cv::COLOR_GRAY2BGR);
 
 				ROI.copyTo(m_frame(cv::Rect(t_mc->start_x, t_mc->start_y, t_mc->end_x - t_mc->start_x, t_mc->end_y - t_mc->start_y)));
-				//
+				*/
 
 				// 선택한 영역 표시.
 				cv::rectangle(m_frame, cv::Point(t_mc->start_x, t_mc->start_y), cv::Point(t_mc->end_x, t_mc->end_y), cv::Scalar(255, 0, 0), 2);
@@ -428,7 +441,15 @@ void CObjectTrackingDlg::OnTimer(UINT_PTR nIDEvent)
 				sprintf_s(strStart, "%d, %d", t_mc->start_x, t_mc->start_y);
 				sprintf_s(strEnd, "%d, %d", t_mc->end_x, t_mc->end_y);
 				cv::putText(m_frame, strStart, cv::Point(t_mc->start_x, t_mc->start_y - 3), cv::FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(255, 255, 120), 1);
-				cv::putText(m_frame, strEnd, cv::Point(t_mc->end_x - 20, t_mc->end_y + 15), cv::FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(255, 255, 120), 1);
+				cv::putText(m_frame, strEnd, cv::Point(t_mc->end_x - 20, t_mc->end_y + 15), cv::FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(255, 255, 120), 1);		
+				
+				///////////////////////////////////////////////////////////////////////////////////
+				// https://webnautes.tistory.com/1354
+				// CamShift 기능 추가.
+
+				t_mc->step = 5;
+				///////////////////////////////////////////////////////////////////////////////////
+
 			}
 		
 			break;
@@ -439,9 +460,24 @@ void CObjectTrackingDlg::OnTimer(UINT_PTR nIDEvent)
 			char strStart[15];
 			sprintf_s(strStart, "%d, %d", t_mc->rc_x, t_mc->rc_y);
 			cv::putText(m_frame, strStart, cv::Point(20, 20), cv::FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(255, 255, 120), 1);
+			
+			break;
+
+		case 5:
+			//cv::Mat bp, img_hsv;
+			//
+			//cv::cvtColor(m_frame, img_hsv, cv::COLOR_BGR2HSV);
+			//cv::calcBackProject(&img_hsv, 1, channels, objectHistogram, bp, histRange);
+
+			//// Tracking
+			//cv::meanShift(bp, roi, cv::TermCriteria(TermCriteria::EPS | TermCriteria::COUNT, 10, 1));
+
+			//cv::rectangle(img_color, roi, cv::Scalar(0, 0, 255), 2);
+			break;
 		}	
 
-					
+	
+
 		// click window close "X" button	
 		if (-1 == cv::getWindowProperty("WebCam", 0))
 			OnBnClickedStopBtn();
